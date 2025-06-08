@@ -1,0 +1,8 @@
+[package]
+name = "montgomery-playground"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+num-primes = "0.3.0"
+rand = "0.9.1"
