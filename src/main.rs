@@ -8,6 +8,7 @@ use rand::RngCore;
 use crate::utils::{
     MOD_U32_BIT_MASK, compute_inverse, div_r_u16, dumb_prime_checker, mod_r_u16, wide_mul_u16,
 };
+pub mod barrett;
 pub mod utils;
 
 /// Precomputed set of constants for each modulus which are used within
