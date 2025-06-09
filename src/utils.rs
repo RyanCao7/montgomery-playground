@@ -6,6 +6,16 @@ pub fn compute_euclid_gcd(a: u32, b: u32) -> u32 {
     compute_euclid_gcd(b, a % b)
 }
 
+// Let's say that are in \mod b, and we have some value a.
+// We wish to compute a^{-1} \mod b, i.e. if c = a^{-1} \mod n
+// then ac = ca = 1 \mod b.
+//
+// Using Extended Euclid, we can get integers (x, y) such that ax + by = 1.
+// This implies that (ax + by) \equiv 1 \mod b
+// Which means that (ax) \equiv 1 \mod b
+// Which means that x \equiv a^{-1} \mod b
+// So we basically just need to compute x \mod b...
+
 /// ax + by = gcd(a, b)
 #[derive(Clone, Debug, Copy)]
 pub struct ExtendedEuclidResult {
@@ -19,7 +29,6 @@ pub struct ExtendedEuclidResult {
 pub fn extended_euclid_gcd_bezout(a: u32, b: u32) -> ExtendedEuclidResult {
     // Make sure to remove this for release mode
     let euclid_gcd = compute_euclid_gcd(a, b);
-    dbg!(euclid_gcd);
 
     let (a_internal, b_internal) = if a > b {
         (a as i128, b as i128)
@@ -71,6 +80,19 @@ pub fn extended_euclid_gcd_bezout(a: u32, b: u32) -> ExtendedEuclidResult {
     }
 }
 
+pub const MOD_U32_BIT_MASK: u32 = (1 << 16) - 1;
+pub fn mod_r_u16(a: u32) -> u16 {
+    (a & MOD_U32_BIT_MASK)
+        .try_into()
+        .expect("Error: this should always work")
+}
+
+pub fn div_r_u16(a: u32) -> u16 {
+    (a >> 16)
+        .try_into()
+        .expect("Error: this should always work")
+}
+
 pub fn wide_mul_u32(a: u32, b: u32) -> u64 {
     (a as u64) * (b as u64)
 }
@@ -83,14 +105,13 @@ pub fn wide_mul_u16(a: u16, b: u16) -> u32 {
 /// Note: Assumes that `x` and `n` are relatively prime!
 pub fn compute_inverse(x: u32, n: u32) -> u32 {
     let euclid_result = extended_euclid_gcd_bezout(x, n);
-    dbg!(euclid_result);
-    dbg!((euclid_result.a as i128) * euclid_result.x + (euclid_result.b as i128) * euclid_result.y);
-    let inv = (euclid_result.x % (n as i128)) as u32;
-    // let inv = if euclid_result.x < 0 {
-    //     ((-euclid_result.x) % (n as i128)) as u32
-    // } else {
-    //     (euclid_result.x % (n as i128)) as u32
-    // };
+    // let inv = (euclid_result.x % (n as i128)) as u32;
+    let inv = if euclid_result.x < 0 {
+        let num_multiples_to_add = (-euclid_result.x / (n as i128)) + 1;
+        euclid_result.x + num_multiples_to_add * (n as i128)
+    } else {
+        euclid_result.x % (n as i128)
+    } as u32;
 
     debug_assert_eq!(wide_mul_u32(inv, x) % (n as u64), 1);
 
@@ -111,5 +132,23 @@ pub mod tests {
             let _ = extended_euclid_gcd_bezout(rand_a, rand_b);
             dbg!(idx);
         });
+    }
+
+    // -9 mod 8 -> -1
+    #[test]
+    fn ryan_playground_test() {
+        let hi = 31;
+        let bye = 25;
+        let rye = extended_euclid_gcd_bezout(hi, bye);
+        dbg!(rye.x);
+        dbg!(rye.y);
+        let inv = if rye.x > 0 {
+            rye.x % (bye as i128)
+        } else {
+            let num_multiples_to_add = (-rye.x / (bye as i128)) + 1;
+            rye.x + num_multiples_to_add * (bye as i128)
+        } as u32;
+        dbg!(inv);
+        dbg!((inv * hi) % bye);
     }
 }
