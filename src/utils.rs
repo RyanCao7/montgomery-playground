@@ -6,16 +6,6 @@ pub fn compute_euclid_gcd(a: u32, b: u32) -> u32 {
     compute_euclid_gcd(b, a % b)
 }
 
-// Let's say that are in \mod b, and we have some value a.
-// We wish to compute a^{-1} \mod b, i.e. if c = a^{-1} \mod n
-// then ac = ca = 1 \mod b.
-//
-// Using Extended Euclid, we can get integers (x, y) such that ax + by = 1.
-// This implies that (ax + by) \equiv 1 \mod b
-// Which means that (ax) \equiv 1 \mod b
-// Which means that x \equiv a^{-1} \mod b
-// So we basically just need to compute x \mod b...
-
 /// ax + by = gcd(a, b)
 #[derive(Clone, Debug, Copy)]
 pub struct ExtendedEuclidResult {
@@ -80,6 +70,8 @@ pub fn extended_euclid_gcd_bezout(a: u32, b: u32) -> ExtendedEuclidResult {
     }
 }
 
+// ------------ UTILITY FUNCTIONS FOR MOD 2^{16} ------------
+
 pub const MOD_U32_BIT_MASK: u32 = (1 << 16) - 1;
 pub fn mod_r_u16(a: u32) -> u16 {
     (a & MOD_U32_BIT_MASK)
@@ -105,7 +97,6 @@ pub fn wide_mul_u16(a: u16, b: u16) -> u32 {
 /// Note: Assumes that `x` and `n` are relatively prime!
 pub fn compute_inverse(x: u32, n: u32) -> u32 {
     let euclid_result = extended_euclid_gcd_bezout(x, n);
-    // let inv = (euclid_result.x % (n as i128)) as u32;
     let inv = if euclid_result.x < 0 {
         let num_multiples_to_add = (-euclid_result.x / (n as i128)) + 1;
         euclid_result.x + num_multiples_to_add * (n as i128)
@@ -113,9 +104,23 @@ pub fn compute_inverse(x: u32, n: u32) -> u32 {
         euclid_result.x % (n as i128)
     } as u32;
 
+    // Sanitychecks
+    debug_assert!(inv < n);
     debug_assert_eq!(wide_mul_u32(inv, x) % (n as u64), 1);
 
     inv
+}
+
+/// Simple checker that ensures no divisibility up to sqrt(n)
+pub fn dumb_prime_checker(n: u16) {
+    let upper_bound = ((n as f64).sqrt()).ceil() as u16;
+    (2..(upper_bound + 1)).for_each(|val| {
+        if n % val == 0 {
+            dbg!(n);
+            dbg!(val);
+        }
+        assert_ne!(n % val, 0);
+    });
 }
 
 #[cfg(test)]

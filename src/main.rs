@@ -5,7 +5,9 @@
 use num_primes::Generator;
 use rand::RngCore;
 
-use crate::utils::{MOD_U32_BIT_MASK, compute_inverse, div_r_u16, mod_r_u16, wide_mul_u16};
+use crate::utils::{
+    MOD_U32_BIT_MASK, compute_inverse, div_r_u16, dumb_prime_checker, mod_r_u16, wide_mul_u16,
+};
 pub mod utils;
 
 /// Precomputed set of constants for each modulus which are used within
@@ -91,18 +93,6 @@ fn main() {
     assert_eq!(ab_mod_modulus, ab_mod_modulus_via_montgomery);
 }
 
-/// Simple checker that ensures no divisibility up to sqrt(n)
-fn dumb_prime_checker(n: u16) {
-    let upper_bound = ((n as f64).sqrt()).ceil() as u16;
-    (2..(upper_bound + 1)).for_each(|val| {
-        if n % val == 0 {
-            dbg!(n);
-            dbg!(val);
-        }
-        assert_ne!(n % val, 0);
-    });
-}
-
 #[cfg(test)]
 pub mod tests {
     use std::time::Instant;
@@ -111,12 +101,13 @@ pub mod tests {
     use rand::RngCore;
 
     use crate::{
-        MontgomeryParametersU16, convert_to_montgomery_form_u16, dumb_prime_checker,
-        montgomery_reduction_u16,
-        utils::{wide_mul_u16, wide_mul_u32},
+        MontgomeryParametersU16, convert_to_montgomery_form_u16, montgomery_reduction_u16,
+        utils::{dumb_prime_checker, wide_mul_u16, wide_mul_u32},
     };
 
-    /// Okay well this is a complete failure but oh well LOL
+    /// running 1 test
+    /// [src/main.rs:147:9] mult_timer = 122.125µs
+    /// [src/main.rs:148:9] mod_timer = 491.625µs
     #[test]
     pub fn basic_mult_vs_mod_timing_test() {
         let mut test_rng = rand::rng();
@@ -148,7 +139,9 @@ pub mod tests {
         dbg!(mod_timer);
     }
 
-    /// The answer is probably "no" lol
+    /// running 1 test
+    /// [src/main.rs:200:9] naive_time = 38.430792ms
+    /// [src/main.rs:201:9] montgomery_time = 34.12975ms
     #[test]
     fn does_montgomery_mul_actually_speed_things_up() {
         let modulus_digits = Generator::safe_prime(16).to_u32_digits();
