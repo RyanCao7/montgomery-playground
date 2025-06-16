@@ -85,6 +85,12 @@ pub fn div_r_u16(a: u32) -> u16 {
         .expect("Error: this should always work")
 }
 
+pub fn div_r_u32(a: u64) -> u32 {
+    (a >> 32)
+        .try_into()
+        .expect("Error: this should always work")
+}
+
 pub fn wide_mul_u32(a: u32, b: u32) -> u64 {
     (a as u64) * (b as u64)
 }

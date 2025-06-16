@@ -102,7 +102,9 @@ pub mod tests {
     use rand::RngCore;
 
     use crate::{
-        MontgomeryParametersU16, convert_to_montgomery_form_u16, montgomery_reduction_u16,
+        MontgomeryParametersU16,
+        barrett::{BarrettParamsU16, barrett_reduction_u16},
+        convert_to_montgomery_form_u16, montgomery_reduction_u16,
         utils::{dumb_prime_checker, wide_mul_u16, wide_mul_u32},
     };
 
@@ -141,8 +143,11 @@ pub mod tests {
     }
 
     /// running 1 test
-    /// [src/main.rs:200:9] naive_time = 38.430792ms
-    /// [src/main.rs:201:9] montgomery_time = 34.12975ms
+    /// [src/main.rs:196:9] naive_time = 384.274709ms
+    /// [src/main.rs:197:9] montgomery_time = 339.6625ms
+    /// test tests::does_montgomery_mul_actually_speed_things_up ... ok
+    ///
+    /// TODO(ryancao): Do this but in Criterion
     #[test]
     fn does_montgomery_mul_actually_speed_things_up() {
         let modulus_digits = Generator::safe_prime(16).to_u32_digits();
@@ -151,7 +156,7 @@ pub mod tests {
         dumb_prime_checker(modulus);
 
         let mut test_rng = rand::rng();
-        let rand_a: Vec<u16> = (0..10000000)
+        let rand_a: Vec<u16> = (0..100000000)
             .map(|_| (test_rng.next_u32() >> 16) as u16)
             .collect();
         let rand_a_copy = rand_a.clone();
@@ -193,5 +198,57 @@ pub mod tests {
 
         dbg!(naive_time);
         dbg!(montgomery_time);
+    }
+
+    /// running 1 test
+    /// [src/main.rs:242:9] naive_time = 415.469833ms
+    /// [src/main.rs:243:9] barrett_time = 337.670083ms
+    /// test tests::test_barrett ... ok
+    ///
+    /// TODO(ryancao): Do this but in Criterion
+    #[test]
+    fn test_barrett() {
+        let modulus_digits = Generator::safe_prime(16).to_u32_digits();
+        assert_eq!(modulus_digits.len(), 1);
+        let modulus = modulus_digits[0] as u16;
+        dumb_prime_checker(modulus);
+
+        let mut test_rng = rand::rng();
+        let rand_a: Vec<u16> = (0..100000000)
+            .map(|_| (test_rng.next_u32() >> 16) as u16)
+            .collect();
+        let rand_a_copy = rand_a.clone();
+
+        // Let's do the naive version first
+        let naive_start = Instant::now();
+        let naive_result = rand_a
+            .into_iter()
+            .reduce(|acc, a| {
+                let raw_wide_product = wide_mul_u16(acc, a);
+                (raw_wide_product % (modulus as u32))
+                    .try_into()
+                    .expect("The residue class should fit in a u16")
+            })
+            .expect("This should not fail. Lol.");
+        let naive_time = naive_start.elapsed();
+
+        let barrett_params = BarrettParamsU16::new(modulus);
+
+        let barrett_start = Instant::now();
+        let barrett_result = rand_a_copy
+            .into_iter()
+            .reduce(|acc, a| {
+                // First we perform a wide multiply
+                let naive_mul_no_reduction = wide_mul_u16(acc, a);
+                // Then a Barrett reduction
+                barrett_reduction_u16(naive_mul_no_reduction, &barrett_params)
+            })
+            .expect("This should work!");
+        let barrett_time = barrett_start.elapsed();
+
+        assert_eq!(naive_result, barrett_result);
+
+        dbg!(naive_time);
+        dbg!(barrett_time);
     }
 }
