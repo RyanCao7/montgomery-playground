@@ -7,6 +7,7 @@ pub fn compute_euclid_gcd(a: u32, b: u32) -> u32 {
 }
 
 /// ax + by = gcd(a, b)
+#[allow(dead_code)]
 #[derive(Clone, Debug, Copy)]
 pub struct ExtendedEuclidResult {
     a: u32,
@@ -62,8 +63,8 @@ pub fn extended_euclid_gcd_bezout(a: u32, b: u32) -> ExtendedEuclidResult {
     debug_assert_eq!(extended_euclid_gcd, euclid_gcd);
 
     ExtendedEuclidResult {
-        a: a as u32,
-        b: b as u32,
+        a,
+        b,
         gcd: extended_euclid_gcd,
         x,
         y,
@@ -137,29 +138,10 @@ pub mod tests {
     #[test]
     fn test_extended_euclid() {
         let mut rng = OsRng::default();
-        (0..100).for_each(|idx| {
+        (0..100).for_each(|_| {
             let rand_a = rng.try_next_u32().expect("Should've been able to generate");
             let rand_b = rng.try_next_u32().expect("Should've been able to generate");
             let _ = extended_euclid_gcd_bezout(rand_a, rand_b);
-            dbg!(idx);
         });
-    }
-
-    // -9 mod 8 -> -1
-    #[test]
-    fn ryan_playground_test() {
-        let hi = 31;
-        let bye = 25;
-        let rye = extended_euclid_gcd_bezout(hi, bye);
-        dbg!(rye.x);
-        dbg!(rye.y);
-        let inv = if rye.x > 0 {
-            rye.x % (bye as i128)
-        } else {
-            let num_multiples_to_add = (-rye.x / (bye as i128)) + 1;
-            rye.x + num_multiples_to_add * (bye as i128)
-        } as u32;
-        dbg!(inv);
-        dbg!((inv * hi) % bye);
     }
 }

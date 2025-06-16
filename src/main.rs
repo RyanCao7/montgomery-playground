@@ -23,7 +23,7 @@ struct MontgomeryParametersU16 {
 
 impl MontgomeryParametersU16 {
     pub fn new(modulus: u16) -> Self {
-        let r = (1 as u32) << 16;
+        let r = 1_u32 << 16;
         let r_mod_n = r % (modulus as u32);
         let r_squared_mod_n = ((r_mod_n * r_mod_n) % (modulus as u32))
             .try_into()
@@ -57,7 +57,7 @@ fn convert_to_montgomery_form_u16(a: u16, montgomery_parameters: &MontgomeryPara
 /// ## Assumptions
 /// * 0 \leq T < RN
 fn montgomery_reduction_u16(t_mont: u32, montgomery_parameters: &MontgomeryParametersU16) -> u16 {
-    debug_assert!(t_mont < ((1 as u32) << 16) * (montgomery_parameters.modulus as u32));
+    debug_assert!(t_mont < (1_u32 << 16) * (montgomery_parameters.modulus as u32));
     let t_mod_r = mod_r_u16(t_mont);
     // Note: \alpha = ((T \mod R N') \mod R).
     let alpha = mod_r_u16((t_mod_r as u32) * montgomery_parameters.n_prime);

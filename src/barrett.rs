@@ -5,7 +5,6 @@
 //! modulus range is supposed to be in.
 
 use crate::utils::{div_r_u32, wide_mul_u32};
-use std::u32::MAX as U32_MAX;
 
 pub struct BarrettParamsU16 {
     modulus: u16,
@@ -15,7 +14,7 @@ impl BarrettParamsU16 {
     pub fn new(modulus: u16) -> Self {
         Self {
             modulus,
-            mu: U32_MAX / (modulus as u32), // This is always okay since `modulus` is prime
+            mu: u32::MAX / (modulus as u32), // This is always okay since `modulus` is prime
         }
     }
 }
